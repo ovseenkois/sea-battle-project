@@ -33,10 +33,17 @@ class Cell {
   sf::Vector2f GetCoordinates() {
     return shape_.getPosition();
   }
+  IShip* GetPtr() {
+    return ptr_to_ship_;
+  }
+  void SetAvailable(bool x) {
+    available_to_set_ = x;
+  }
 };
 
 class Board {
   friend class Ship1;
+  friend class Ship2;
 
  private:
   int size_;
@@ -56,9 +63,9 @@ class Board {
         sf::Color cell_color(180, 180, 255);
         shape.setOutlineColor(cell_color);
         shape.setOutlineThickness(cell_size_ / 20);
-        shape.setPosition(begin_.x_ + i * cell_size_, begin_.y_ + j * cell_size_);
+        shape.setPosition(begin_.x_ + i * (cell_size_ + 100 / 20), begin_.y_ + j * (cell_size_ + 100 / 20));
         Cell cell(shape, cell_size_, nullptr);
-        board_[i][j] = cell;
+        board_[j][i] = cell;
       }
     }
   }
@@ -95,6 +102,7 @@ class Constants {
     new_shape.setOutlineThickness(50 / 20);
     new_shape.setPosition(coord);
     Cell new_cell(new_shape, 50, ship);
+    new_cell.SetAvailable(false);
     return new_cell;
   }
 };
@@ -112,40 +120,187 @@ class Ship1 : public IShip {
     int i = begin_.y_;
     int j = begin_.x_;
     if (event.key.code == sf::Keyboard::Left) {
-      if (arr.board_[i][j - 1].IsAvailableToSet()) {
+      if (j - 1 >= 0 && arr.board_[i][j - 1].IsAvailableToSet()) {
         auto old_cell = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
         auto new_cell = Constants().ShipCell(this, arr.board_[i][j - 1].GetCoordinates());
         arr.board_[i][j - 1] = new_cell;
         arr.board_[i][j] = old_cell;
+        begin_ = Point(j - 1, i);
       }
-      begin_ = Point(j - 1, i);
     }
     if (event.key.code == sf::Keyboard::Right) {
-      if (arr.board_[i][j + 1].IsAvailableToSet()) {
+      if (j + 1 < arr.size_ && arr.board_[i][j + 1].IsAvailableToSet()) {
         auto old_cell = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
         auto new_cell = Constants().ShipCell(this, arr.board_[i][j + 1].GetCoordinates());
         arr.board_[i][j + 1] = new_cell;
         arr.board_[i][j] = old_cell;
+        begin_ = Point(j + 1, i);
       }
-      begin_ = Point(j + 1, i);
     }
     if (event.key.code == sf::Keyboard::Up) {
-      if (arr.board_[i - 1][j].IsAvailableToSet()) {
+      if (i - 1 >= 0 && arr.board_[i - 1][j].IsAvailableToSet()) {
         auto old_cell = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
         auto new_cell = Constants().ShipCell(this, arr.board_[i - 1][j].GetCoordinates());
         arr.board_[i - 1][j] = new_cell;
         arr.board_[i][j] = old_cell;
+        begin_ = Point(j, i - 1);
       }
-      begin_ = Point(j, i - 1);
     }
     if (event.key.code == sf::Keyboard::Down) {
-      if (arr.board_[i + 1][j].IsAvailableToSet()) {
+      if (i + 1 < arr.size_ && arr.board_[i + 1][j].IsAvailableToSet()) {
         auto old_cell = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
         auto new_cell = Constants().ShipCell(this, arr.board_[i + 1][j].GetCoordinates());
         arr.board_[i + 1][j] = new_cell;
         arr.board_[i][j] = old_cell;
+        begin_ = Point(j, i + 1);
       }
-      begin_ = Point(j, i + 1);
+    }
+  }
+};
+
+enum Orientation { LEFT, RIGHT, UP, DOWN };
+
+class Ship2 : public IShip {
+  Point begin_;
+  int size_ = 2;
+  bool dead = false;
+  Orientation orientation = RIGHT;
+
+ public:
+  Ship2() = default;
+  Ship2(Point begin) : begin_(begin) {
+  }
+  void Move(sf::Event& event, Board& arr) override {
+    int i = begin_.y_;
+    int j = begin_.x_;
+    auto orient = orientation;
+    if (orient == RIGHT) {
+      if (event.key.code == sf::Keyboard::R) {
+        if (i - 1 >= 0 && arr.board_[i - 1][j].IsAvailableToSet()) {
+          auto old_cell = Constants().BoardCell(arr.board_[i][j + 1].GetCoordinates());
+          auto new_cell = Constants().ShipCell(this, arr.board_[i - 1][j].GetCoordinates());
+          arr.board_[i - 1][j] = new_cell;
+          arr.board_[i][j + 1] = old_cell;
+          orientation = UP;
+        }
+      }
+      if (event.key.code == sf::Keyboard::Left) {
+        if (j - 1 >= 0 && arr.board_[i][j - 1].IsAvailableToSet()) {
+          auto old_cell = Constants().BoardCell(arr.board_[i][j + 1].GetCoordinates());
+          auto new_cell = Constants().ShipCell(this, arr.board_[i][j - 1].GetCoordinates());
+          arr.board_[i][j - 1] = new_cell;
+          arr.board_[i][j + 1] = old_cell;
+          begin_ = Point(j - 1, i);
+        }
+      }
+      if (event.key.code == sf::Keyboard::Right) {
+        if (j + 2 < arr.size_ && arr.board_[i][j + 2].IsAvailableToSet()) {
+          auto old_cell = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto new_cell = Constants().ShipCell(this, arr.board_[i][j + 2].GetCoordinates());
+          arr.board_[i][j + 2] = new_cell;
+          arr.board_[i][j] = old_cell;
+          begin_ = Point(j + 1, i);
+        }
+      }
+      if (event.key.code == sf::Keyboard::Up) {
+        if (i - 1 >= 0 && arr.board_[i - 1][j].IsAvailableToSet() && arr.board_[i - 1][j + 1].IsAvailableToSet()) {
+          auto old_cell1 = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto old_cell2 = Constants().BoardCell(arr.board_[i][j + 1].GetCoordinates());
+          auto new_cell1 = Constants().ShipCell(this, arr.board_[i - 1][j].GetCoordinates());
+          auto new_cell2 = Constants().ShipCell(this, arr.board_[i - 1][j + 1].GetCoordinates());
+          arr.board_[i - 1][j] = new_cell1;
+          arr.board_[i - 1][j + 1] = new_cell2;
+          arr.board_[i][j] = old_cell1;
+          arr.board_[i][j + 1] = old_cell2;
+          begin_ = Point(j, i - 1);
+        }
+      }
+      if (event.key.code == sf::Keyboard::Down) {
+        if (i + 1 < arr.size_ && arr.board_[i + 1][j].IsAvailableToSet() &&
+            arr.board_[i + 1][j + 1].IsAvailableToSet()) {
+          auto old_cell1 = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto old_cell2 = Constants().BoardCell(arr.board_[i][j + 1].GetCoordinates());
+          auto new_cell1 = Constants().ShipCell(this, arr.board_[i + 1][j].GetCoordinates());
+          auto new_cell2 = Constants().ShipCell(this, arr.board_[i + 1][j + 1].GetCoordinates());
+          arr.board_[i + 1][j] = new_cell1;
+          arr.board_[i + 1][j + 1] = new_cell2;
+          arr.board_[i][j] = old_cell1;
+          arr.board_[i][j + 1] = old_cell2;
+          begin_ = Point(j, i + 1);
+        }
+      }
+    }
+    if (orient == UP) {
+      if (event.key.code == sf::Keyboard::R) {
+        if (j + 1 < arr.size_ && arr.board_[i][j + 1].IsAvailableToSet()) {
+          auto old_cell = Constants().BoardCell(arr.board_[i - 1][j].GetCoordinates());
+          auto new_cell = Constants().ShipCell(this, arr.board_[i][j + 1].GetCoordinates());
+          arr.board_[i - 1][j] = old_cell;
+          arr.board_[i][j + 1] = new_cell;
+          orientation = RIGHT;
+        }
+      }
+      if (event.key.code == sf::Keyboard::Left) {
+        if (j - 1 >= 0 && arr.board_[i][j - 1].IsAvailableToSet() && arr.board_[i - 1][j - 1].IsAvailableToSet()) {
+          auto old_cell1 = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto old_cell2 = Constants().BoardCell(arr.board_[i - 1][j].GetCoordinates());
+
+          auto new_cell1 = Constants().ShipCell(this, arr.board_[i][j - 1].GetCoordinates());
+          auto new_cell2 = Constants().ShipCell(this, arr.board_[i - 1][j - 1].GetCoordinates());
+
+          arr.board_[i][j] = old_cell1;
+          arr.board_[i - 1][j] = old_cell2;
+          arr.board_[i][j - 1] = new_cell1;
+          arr.board_[i - 1][j - 1] = new_cell2;
+          begin_ = Point(j - 1, i);
+        }
+      }
+      if (event.key.code == sf::Keyboard::Right) {
+        if (j + 1 < arr.size_ && arr.board_[i][j + 1].IsAvailableToSet() &&
+            arr.board_[i - 1][j + 1].IsAvailableToSet()) {
+          auto old_cell1 = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto old_cell2 = Constants().BoardCell(arr.board_[i - 1][j].GetCoordinates());
+
+          auto new_cell1 = Constants().ShipCell(this, arr.board_[i][j + 1].GetCoordinates());
+          auto new_cell2 = Constants().ShipCell(this, arr.board_[i - 1][j + 1].GetCoordinates());
+
+          arr.board_[i][j] = old_cell1;
+          arr.board_[i - 1][j] = old_cell2;
+          arr.board_[i][j + 1] = new_cell1;
+          arr.board_[i - 1][j + 1] = new_cell2;
+          begin_ = Point(j + 1, i);
+        }
+      }
+      if (event.key.code == sf::Keyboard::Up) {
+        if (i - 2 >= 0 && arr.board_[i - 2][j].IsAvailableToSet()) {
+          auto old_cell1 = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto old_cell2 = Constants().BoardCell(arr.board_[i - 1][j].GetCoordinates());
+
+          auto new_cell1 = Constants().ShipCell(this, arr.board_[i - 1][j].GetCoordinates());
+          auto new_cell2 = Constants().ShipCell(this, arr.board_[i - 2][j].GetCoordinates());
+
+          arr.board_[i][j] = old_cell1;
+          arr.board_[i - 1][j] = old_cell2;
+          arr.board_[i - 1][j] = new_cell1;
+          arr.board_[i - 2][j] = new_cell2;
+          begin_ = Point(j, i - 1);
+        }
+      }
+      if (event.key.code == sf::Keyboard::Down) {
+        if (i + 1 < arr.size_ && arr.board_[i + 1][j].IsAvailableToSet()) {
+          auto old_cell1 = Constants().BoardCell(arr.board_[i][j].GetCoordinates());
+          auto old_cell2 = Constants().BoardCell(arr.board_[i - 1][j].GetCoordinates());
+
+          auto new_cell1 = Constants().ShipCell(this, arr.board_[i + 1][j].GetCoordinates());
+          auto new_cell2 = Constants().ShipCell(this, arr.board_[i][j].GetCoordinates());
+
+          arr.board_[i][j] = old_cell1;
+          arr.board_[i - 1][j] = old_cell2;
+          arr.board_[i + 1][j] = new_cell1;
+          arr.board_[i][j] = new_cell2;
+          begin_ = Point(j, i + 1);
+        }
+      }
     }
   }
 };

@@ -4,7 +4,12 @@
 #include "headers/board.h"
 
 int main() {
-  IShip* ship1 = new Ship1(Point(1, 1));
+  IShip* ship1_1 = new Ship1(Point(2, 2));
+  IShip* ship1_2 = new Ship2(Point(3, 3));
+  std::vector<IShip*> ships;
+  int index = 0;
+  ships.push_back(ship1_1);
+  ships.push_back(ship1_2);
   sf::RenderWindow window(sf::VideoMode(1600, 800), "My window");
   window.setKeyRepeatEnabled(false);
 
@@ -21,7 +26,14 @@ int main() {
         window.close();
         break;
       }
-      ship1->Move(event, board);
+      if (event.type == sf::Event::KeyPressed) {
+        if (event.key.code == sf::Keyboard::Enter) {
+          ++index;  // нужно контролировать индекс(при нажатии каждого ентера увеличивается)
+        }
+        if (index < 2) {
+          ships[index]->Move(event, board);
+        }
+      }
     }
     window.clear();
 
@@ -30,7 +42,9 @@ int main() {
 
     window.display();
   }
-  delete static_cast<Ship1*>(ship1);
+  for (auto i : ships) {
+    delete i;
+  }
 }
 
 // else if (event.type == sf::Event::KeyPressed) {
