@@ -1,16 +1,27 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-#include <iostream>
 #include "headers/board.h"
+#include "headers/ship.h"
 
 int main() {
-  IShip* ship1_1 = new Ship1(Point(2, 2));
-  IShip* ship1_2 = new Ship2(Point(3, 3));
   std::vector<IShip*> ships;
+  ships.reserve(10);
   int index = 0;
-  ships.push_back(ship1_1);
-  ships.push_back(ship1_2);
-  sf::RenderWindow window(sf::VideoMode(1600, 800), "My window");
+  for (int i = 0; i < 10; ++i) {
+    if (i <= 3) {
+      ships.push_back(new Ship1());
+    }
+    if (i >= 4 && i <= 6) {
+      ships.push_back(new Ship2());
+    }
+    if (i >= 7 && i <= 8) {
+      ships.push_back(new Ship3());
+    }
+    if (i == 9) {
+      ships.push_back(new Ship4());
+    }
+  }
+  sf::RenderWindow window(sf::VideoMode(1600, 800), "Naval Battle");
   window.setKeyRepeatEnabled(false);
 
   Board board(10, Point(100, 100), 50);  // поле
@@ -26,12 +37,16 @@ int main() {
         window.close();
         break;
       }
-      if (event.type == sf::Event::KeyPressed) {
-        if (event.key.code == sf::Keyboard::Enter) {
-          ++index;  // нужно контролировать индекс(при нажатии каждого ентера увеличивается)
+      if (index < 10) {
+        if (event.type == sf::Event::KeyPressed) {
+          ships[index]->Rotate(event, board, window);
         }
-        if (index < 2) {
+        if (event.type == sf::Event::MouseMoved) {
           ships[index]->Move(event, board);
+        }
+        if (event.type == sf::Event::MouseButtonPressed) {
+          ships[index]->Set(event, board);
+          ++index;
         }
       }
     }
@@ -46,19 +61,3 @@ int main() {
     delete i;
   }
 }
-
-// else if (event.type == sf::Event::KeyPressed) {
-//   if (event.key.code == sf::Keyboard::Right) {
-//     test.setPosition(test.getPosition().x + 50, test.getPosition().y);
-//     break;
-//   } else if (event.key.code == sf::Keyboard::Left) {
-//     test.setPosition(test.getPosition().x - 50, test.getPosition().y);
-//     break;
-//   } else if (event.key.code == sf::Keyboard::Up) {
-//     test.setPosition(test.getPosition().x, test.getPosition().y - 50);
-//     break;
-//   } else if (event.key.code == sf::Keyboard::Down) {
-//     test.setPosition(test.getPosition().x, test.getPosition().y + 50);
-//     break;
-//   }
-// }
