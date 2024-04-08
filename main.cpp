@@ -2,29 +2,22 @@
 #include <SFML/Window.hpp>
 #include "headers/board.h"
 #include "headers/ship.h"
+#include <memory>
+#include "headers/player.h"
 
 int main() {
-  std::vector<IShip*> ships;
-  ships.reserve(10);
-  int index = 0;
-  for (int i = 0; i < 10; ++i) {
-    if (i <= 3) {
-      ships.push_back(new Ship1());
-    }
-    if (i >= 4 && i <= 6) {
-      ships.push_back(new Ship2());
-    }
-    if (i >= 7 && i <= 8) {
-      ships.push_back(new Ship3());
-    }
-    if (i == 9) {
-      ships.push_back(new Ship4());
-    }
-  }
   sf::RenderWindow window(sf::VideoMode(1600, 800), "Naval Battle");
   window.setKeyRepeatEnabled(false);
 
-  Board board(10, Point(100, 100), 50);  // поле
+   
+  Constants::MakeX();
+  Constants::MakePoint();
+  Symbol::MakeFont();
+
+  Board board1(10, Point(100, 100), 50);  // поле
+  Board board2(10, Point(900, 100), 50);
+  Player player1(board1, std::unique_ptr<PlayerState>(new PlacingShips()));
+  Player player2(board2, std::unique_ptr<PlayerState>(new Starting()));
 
   sf::RectangleShape game_background;  // задний фон
   game_background.setFillColor(sf::Color(255, 255, 255));
@@ -37,27 +30,13 @@ int main() {
         window.close();
         break;
       }
-      if (index < 10) {
-        if (event.type == sf::Event::KeyPressed) {
-          ships[index]->Rotate(event, board, window);
-        }
-        if (event.type == sf::Event::MouseMoved) {
-          ships[index]->Move(event, board);
-        }
-        if (event.type == sf::Event::MouseButtonPressed) {
-          ships[index]->Set(event, board);
-          ++index;
-        }
-      }
+      player1.Handle(event, window, player2);
+      player2.Handle(event, window, player1);
     }
     window.clear();
-
     window.draw(game_background);
-    board.Draw(window);
-
+    board1.Draw(window);
+    board2.Draw(window);
     window.display();
-  }
-  for (auto i : ships) {
-    delete i;
   }
 }
